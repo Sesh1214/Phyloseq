@@ -15,3 +15,4 @@ taxa_names(taxa)
 ps <- phyloseq(otu_table(otu, taxa_are_rows=TRUE), tax_table(taxa), sample_data(metadata))
 ps_phylum <- tax_glom(ps, "ta1")
 p1 <- plot_bar(ps_phylum, fill = "ta1")
+p1
