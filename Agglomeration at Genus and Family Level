@@ -1,0 +1,82 @@
+#START
+
+library(readxl)
+library(ggplot2)
+library(phyloseq)
+library(magrittr)
+library(tidyverse)
+
+#setwd('~/Desktop/Seshadhri_Phyloseq/')
+
+#The files used in this are transposed from the original so that the species/genus/class etc are rows - hence the taxa_are_rows=TRUE argument
+metadata <- read.table("16s_Progression_Data.tsv", sep="\t", header=TRUE, row.names = 1)
+otu <- read.table("16s_Community.tsv", sep="\t", header=TRUE, row.names = 1)
+
+#replace . with _
+rownames(metadata) <- gsub("\\.", "_", rownames(metadata))
+colnames(otu) <- gsub("\\.", "_", colnames(otu))
+colnames(otu)
+rownames(metadata)
+
+#ensure samples are consistent between metadata and otu data
+rownames(metadata) %in% colnames(otu)
+#filter out samples from metadata and reorder to clean it up a bit
+metadata %<>% rownames_to_column('sample_id')
+metadata %<>% filter(sample_id %in% colnames(otu))
+#reorder otu data
+otu %<>% rownames_to_column('taxa')
+otu %<>% select(c('taxa', metadata$sample_id))
+otu %<>% column_to_rownames('taxa')
+metadata %<>% column_to_rownames('sample_id')
+
+#ensure all rownames of metadata match colnames of otu
+all(rownames(metadata) == colnames(otu))
+
+
+# Prepare OTU table
+otu_tab <- otu_table(otu, taxa_are_rows = TRUE)
+# Prepare sample data
+sample_dat <- sample_data(metadata)
+
+#read in OTU taxonomy data provided by Seshadhri
+tax_dat <- read_excel('Species_Reference.xlsx', col_names = c('Genus', 'OTU'))
+#coerce other taxonomic levels for the minute
+tax_dat$Domain <- 'Unknown'
+tax_dat$Phylum <- 'Unknown'
+tax_dat$Class <- 'Unknown'
+tax_dat$Order <- 'Unknown'
+tax_dat$Family <- 'Unknown'
+tax_dat$Species <- 'Unknown'
+
+tax_dat %<>% select(Domain, Phylum, Class, Order, Family, Genus, Species, OTU)
+
+#check all the OTU names match
+all(tax_dat$OTU == rownames(otu))
+tax_dat %<>% column_to_rownames('OTU')
+
+#Make Tax table object
+tax_tab <- tax_table(tax_dat)
+
+# Retrieve ranks
+rank_names(tax_tab)
+
+#Make Phyloseq Object
+ps <- merge_phyloseq(otu_tab, sample_dat, tax_tab)
+
+#coerce rank names
+colnames(tax_table(ps)) <- c("Domain", "Phylum", "Class", "Order", "Family", "Genus", "Species")
+
+#check rank names
+rank_names(ps)
+ps_genus <- tax_glom(ps, "Genus")
+p1 <- plot_bar(ps_genus, fill = "Genus")
+ggsave(filename = 'ps_genus.pdf', plot=p1, width=30, height=8)
+
+#Family level Phyloseq Object
+fam_glom <- readRDS(file='For_Seshadhri_Family_Glom.RDS')
+rank_names(fam_glom)
+ps_family <- tax_glom(fam_glom, "Family")
+p2 <- plot_bar(ps_family, fill = "Family")
+ggsave(filename = 'ps_family.pdf', plot=p2, width=30, height=8)
+
+#END
