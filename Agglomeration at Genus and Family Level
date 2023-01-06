@@ -79,4 +79,23 @@ ps_family <- tax_glom(fam_glom, "Family")
 p2 <- plot_bar(ps_family, fill = "Family")
 ggsave(filename = 'ps_family.pdf', plot=p2, width=30, height=8)
 
+#Trying to Create a Phylogenetic Tree with the Ape package and then a Heatmap
+prog_data <- sample_data(data.frame(Progression = metadata$progression, Progression_Days = metadata$progression_days, row.names = sample_names(ps), stringsAsFactors = FALSE))
+head(prog_data)
+library("ape")
+genus_tree <- rtree(ntaxa(ps), rooted = TRUE, tip.label = taxa_names(ps))
+plot(genus_tree)
+family_tree <- rtree(ntaxa(fam_glom), rooted = TRUE, tip.label = taxa_names(fam_glom))
+plot(family_tree)
+
+#Combine New Data with Existing Phyloseq Objects
+genus_phyloseq <- merge_phyloseq(ps, prog_data, genus_tree)
+genus_phyloseq
+family_phyloseq <- merge_phyloseq(fam_glom, prog_data, family_tree)
+family_phyloseq
+
+#Plot Tree and Heatmap with New Combined Data
+plot_tree(genus_phyloseq, color = "Progression_Days", label.tips = "taxa_names(ps)", ladderize = "left", plot.margin = 0.3)
+plot_heatmap(genus_phyloseq)
+plot_heatmap(family_phyloseq)
 #END
