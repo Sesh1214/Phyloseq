@@ -1,0 +1,46 @@
+#Principal Components Analysis (PCA)
+#Had to do this on the OTU Table
+pcoa_otu_df <- prcomp(otu_tab_df, scale = TRUE)
+pcoa_otu_df
+names(pcoa_otu_df)
+#Mean and Standard Deviation of Variables used for scaling prior to implementing PCA
+pcoa_otu_df$center
+pcoa_otu_df$sdev
+#Rotation matrix provides principal component loadings - each column contains the corresponding principal component loading vector
+pcoa_otu_df$rotation
+#Plot the First two Principal components
+biplot(pcoa_otu_df, scale = 0)
+#Standard Deviation and Variance
+pcoa_otu_df$sdev
+pcoa_otu_df_var <- pcoa_otu_df$sdev^2
+pcoa_otu_df_var
+#Proportion of Variance of Each Principal Component
+var_component_pcoa_otu <- pcoa_otu_df_var/sum(pcoa_otu_df_var)
+var_component_pcoa_otu
+#Plotting PVE and cumulative PVE for each component
+plot(var_component_pcoa_otu, xlab = "Principal Component", ylab = "Proportion of Variance Explained", ylim = c(0,1), type = "b")
+plot(cumsum(var_component_pcoa_otu), xlab = "Principal Component", ylab = "Cumulative Proportion of Variance Explained", ylim = c(0,1), type = "b")
+
+#PCOA with Pakcage ecodist
+install.packages("ecodist")
+library(ecodist)
+#Write the Phyloseq object fam_glom (Family Level) as a Matrix
+ntaxa(fam_glom)
+sample_names(fam_glom)
+taxa_names(fam_glom)
+class(fam_glom)
+fam_glom_sampledata_matrix <- data.matrix(phyloseq@sample_data(fam_glom), rownames.force = TRUE)
+fam_glom_communitydata_matrix <- data.matrix(phyloseq@otu_table(fam_glom), rownames.force = TRUE)
+pcoa_fam_glom <- pcoa(fam_glom_communitydata_matrix, correction = "none", rn = NULL)
+biplot(pcoa_fam_glom, Y=NULL, plot.axes = c(1,2), dir.axis1=1, dir.axis2=1, rn=NULL, main = NULL)
+
+
+#K-Means Clustering
+km.otu_tab <- kmeans(otu_tab_df, 3, nstart = 20)
+plot(otu_tab, col = (km.otu_tab$cluster + 1), main = "K-Means Clustering Results with k = 3", xlab = "", ylab = "", pch = 20, cex = 2)
+
+
+#Find out the individual components of the fam_glom phyloseq object and then convert it to a dataframe
+#Try to get a heatmap out of this - MAYBE SAVE THIS FOR LATER
+#Use the Dataframe to try and generate K-means clustering with k=3 and do PCOA analysis as well
+#END
