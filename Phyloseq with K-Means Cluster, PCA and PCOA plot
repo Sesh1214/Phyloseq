@@ -190,3 +190,27 @@ pcoa_famglom <- pcoa(dist_matrix_famglom, correction = "none", rn = NULL)
 #Plot the Results Above
 biplot(pcoa_ps, Y = NULL, plot.axes = c(1,2), dir.axis1=1, dir.axis2=1, rn = NULL, main = NULL)
 biplot(pcoa_famglom, Y = NULL, plot.axes = c(1,2), dir.axis1=1, dir.axis2=1, rn = NULL, main = NULL)
+
+#Make this Biplot look better - Phyloseq package has functions for ordination including using Manhattan Distances
+famglom_ord <- ordinate(fam_glom, "PCoA", "manhattan")
+plot_famglom_samples_ord_mets <- plot_ordination(fam_glom, famglom_ord, type = "samples", label = "X.SampleID", color = "metastasis")
+plot_famglom_samples_ord_mets
+plot_famglom_samples_ord_progression <- plot_ordination(fam_glom, famglom_ord, type = "samples", label = "X.SampleID", color = "Progression")
+plot_famglom_samples_ord_progression
+plot_famglom_samples_ord_category1 <- plot_ordination(fam_glom, famglom_ord, type = "samples", label = "X.SampleID", color = "Category1")
+plot_famglom_samples_ord_category1
+plot_famglom_samples_ord_category2 <- plot_ordination(fam_glom, famglom_ord, type = "samples", label = "X.SampleID", color = "Category2")
+plot_famglom_samples_ord_category2 
+plot_famglom_samples_ord_clincat <- plot_ordination(fam_glom, famglom_ord, type = "samples", label = "X.SampleID", color = "ClinicalCategory")
+plot_famglom_samples_ord_clincat
+
+#CODE WORKS PERFECTLY UNTIL THIS POINT. FROM HERE ON OUT, IT HAS TO BE WORKED ON.
+#Kaplan Meier Curve
+library(survival)
+library(lubridate)
+library(ggsurvfit)
+library(gtsummary)
+library(tidycmprsk)
+library(condsurv)
+
+#END
