@@ -214,4 +214,14 @@ cluster_famglom <- kmeans(kmeans_df_famglom, 3, nstart = 20)
 fviz_cluster(cluster_famglom, data = kmeans_df_famglom, palette = c("#2E9FDF", "#00AFBB", "#E7B800"), geom = "point", ellipse.type = "convex", ggtheme = theme_bw(), main = "Clusters of Patient Samples")
 
 #CODE WORKS PERFECTLY UNTIL THIS POINT. FROM HERE ON OUT, IT HAS TO BE WORKED ON.
+#KM Curves
+
+library(survival)
+library(ggsurvfit)
+famglom_metadata <- read.csv("Famglom_Metadata.csv", sep =",", header = TRUE, row.names = 1)
+head(famglom_metadata)
+Surv(famglom_metadata$progression_days, famglom_metadata$Progression)
+s1 <- survfit(Surv(famglom_metadata$progression_days, famglom_metadata$Progression) ~ 1, data = famglom_metadata)
+str(s1)
+survfit2(Surv(famglom_metadata$progression_days, famglom_metadata$Progression) ~ 1 , data = famglom_metadata) %>% ggsurvfit() + labs (x = "Days to Progression", y = "Overall Progression Probability")
 #END
