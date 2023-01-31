@@ -204,13 +204,14 @@ plot_famglom_samples_ord_category2
 plot_famglom_samples_ord_clincat <- plot_ordination(fam_glom, famglom_ord, type = "samples", label = "X.SampleID", color = "ClinicalCategory")
 plot_famglom_samples_ord_clincat
 
-#CODE WORKS PERFECTLY UNTIL THIS POINT. FROM HERE ON OUT, IT HAS TO BE WORKED ON.
-#Kaplan Meier Curve
-library(survival)
-library(lubridate)
-library(ggsurvfit)
-library(gtsummary)
-library(tidycmprsk)
-library(condsurv)
+data_from_famglom_samples_ord_mets <- ggplot_build(plot_famglom_samples_ord_mets)
+data_from_famglom_samples_ord_mets$data
+df_data_from_famglom_samples_ord_mets <- as.data.frame(data_from_famglom_samples_ord_mets$data)
+colnames(df_data_from_famglom_samples_ord_mets)
+kmeans_df_famglom <- df_data_from_famglom_samples_ords_mets[,c('x','y')]
+head(kmeans_df_famglom)
+cluster_famglom <- kmeans(kmeans_df_famglom, 3, nstart = 20)
+fviz_cluster(cluster_famglom, data = kmeans_df_famglom, palette = c("#2E9FDF", "#00AFBB", "#E7B800"), geom = "point", ellipse.type = "convex", ggtheme = theme_bw(), main = "Clusters of Patient Samples")
 
+#CODE WORKS PERFECTLY UNTIL THIS POINT. FROM HERE ON OUT, IT HAS TO BE WORKED ON.
 #END
