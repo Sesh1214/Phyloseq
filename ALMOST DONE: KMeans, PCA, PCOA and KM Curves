@@ -10,6 +10,23 @@ library(factoextra)
 library(RColorBrewer)
 library(aPCoA)
 library(grDevices)
+library(ggpubr)
+library(writexl)
+library(survival)
+library(ggsurvfit)
+library(tidycmprsk)
+library(lubridate)
+library(gplots)
+library(pheatmap)
+library(ComplexHeatMap)
+library(circlize)
+#ComplexHeatMap Installation
+if (!require("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+
+BiocManager::install("ComplexHeatmap")
+library(ComplexHeatmap)
+library(colorspace)
 
 #setwd('~/Desktop/Seshadhri_Phyloseq/')
 
@@ -102,14 +119,8 @@ family_phyloseq
 #Plot Tree and Heatmap with New Combined Data
 plot_tree(genus_phyloseq, color = "Progression_Days", label.tips = "taxa_names(ps)", ladderize = "left", plot.margin = 0.3)
 plot_heatmap(genus_phyloseq)
-plot_heatmap(family_phyloseq)
+plot_heatmap(family_phyloseq, taxa.label = "Family", taxa.order = "Family")
 
-#ComplexHeatMap Installation
-if (!require("BiocManager", quietly = TRUE))
-  install.packages("BiocManager")
-
-BiocManager::install("ComplexHeatmap")
-library(ComplexHeatmap)
 
 #Convert the OTU Table, Sample Data and Taxonomy Table for Genus Level to a Dataframe and Matrix
 otu_ps <- as(otu_table(ps), "matrix")
@@ -193,6 +204,7 @@ biplot(pcoa_famglom, Y = NULL, plot.axes = c(1,2), dir.axis1=1, dir.axis2=1, rn 
 
 #Make this Biplot look better - Phyloseq package has functions for ordination including using Manhattan Distances
 famglom_ord <- ordinate(fam_glom, "PCoA", "manhattan")
+plot_famglom_otus_ord_mets <- plot_ordination(fam_glom, famglom_ord, type = "otu", label = "Family", color = "Family")
 plot_famglom_samples_ord_mets <- plot_ordination(fam_glom, famglom_ord, type = "samples", label = "X.SampleID", color = "metastasis")
 plot_famglom_samples_ord_mets
 plot_famglom_samples_ord_progression <- plot_ordination(fam_glom, famglom_ord, type = "samples", label = "X.SampleID", color = "Progression")
@@ -204,24 +216,89 @@ plot_famglom_samples_ord_category2
 plot_famglom_samples_ord_clincat <- plot_ordination(fam_glom, famglom_ord, type = "samples", label = "X.SampleID", color = "ClinicalCategory")
 plot_famglom_samples_ord_clincat
 
+#K-Means Clustering On the Samples with the co-ordinates extracted from the PCOA plot - The phyloseq package uses ggplot so you can just use ggplot_build and proceed from there
+
 data_from_famglom_samples_ord_mets <- ggplot_build(plot_famglom_samples_ord_mets)
 data_from_famglom_samples_ord_mets$data
 df_data_from_famglom_samples_ord_mets <- as.data.frame(data_from_famglom_samples_ord_mets$data)
 colnames(df_data_from_famglom_samples_ord_mets)
-kmeans_df_famglom <- df_data_from_famglom_samples_ords_mets[,c('x','y')]
+kmeans_df_famglom <- df_data_from_famglom_samples_ord_mets[,c('x','y')]
 head(kmeans_df_famglom)
 cluster_famglom <- kmeans(kmeans_df_famglom, 3, nstart = 20)
 fviz_cluster(cluster_famglom, data = kmeans_df_famglom, palette = c("#2E9FDF", "#00AFBB", "#E7B800"), geom = "point", ellipse.type = "convex", ggtheme = theme_bw(), main = "Clusters of Patient Samples")
 
 #CODE WORKS PERFECTLY UNTIL THIS POINT. FROM HERE ON OUT, IT HAS TO BE WORKED ON.
-#KM Curves
 
-library(survival)
-library(ggsurvfit)
-famglom_metadata <- read.csv("Famglom_Metadata.csv", sep =",", header = TRUE, row.names = 1)
+#Need to save the $vectors from pcoa_famglom as a dataframe and $cluster from cluster_famglom as separate dataframes into CSV files and then compare the two of them to figure out which sample is where - maybe plot another one.
+cluster_famglom_clusters_df <- as.data.frame(cluster_famglom$cluster)
+pcoa_famglom_vectors_df <- as.data.frame(pcoa_famglom$vectors)
+write.csv(otu_famglom_df, "Famglom_OTU_Table.csv")
+taxa_famglom <- as(tax_table(fam_glom), "matrix")
+taxa_famglom_df <- as.data.frame(taxa_famglom)
+write.csv(taxa_famglom_df, "Famglom_Taxa_Table.csv")
+
+#At this point, follow each of these steps carefully - these are VERY IMPORTANT
+#1. Separate the samples into three clusters - each with its own CSV files so you know which samples go into which cluster
+#2. Combine the Famglom_OTU_Table.csv and Famglom_Taxa_Table.csv to get one CSV file that has all the samples and the abundances of the families for each sample
+#3. Combine the clusters data into this new CSV file
+#4. Separate out the samples and their family abundances into three separate CSV files based on their clusters
+#5. Use these three files to generate heatmaps and combine them into one single heatmap - should be possible with Complex Heatmap
+
+sample_family_abundance_cluster1 <- read.csv("Sample_Family_Abundance_Cluster1.csv", header = TRUE)
+sample_family_abundance_cluster2 <- read.csv("Sample_Family_Abundance_Cluster2.csv", header = TRUE)
+sample_family_abundance_cluster3 <- read.csv("Sample_Family_Abundance_Cluster3.csv", header = TRUE)
+
+
+df_sample_family_abundance_cluster1 <- as.data.frame(sample_family_abundance_cluster1)
+df_sample_family_abundance_cluster2 <- as.data.frame(sample_family_abundance_cluster2)
+df_sample_family_abundance_cluster3 <- as.data.frame(sample_family_abundance_cluster3)
+df_sample_family_abundance_cluster1 <- t(df_sample_family_abundance_cluster1)
+df_sample_family_abundance_cluster2 <- t(df_sample_family_abundance_cluster2)
+df_sample_family_abundance_cluster3 <- t(df_sample_family_abundance_cluster3)
+colnames(df_sample_family_abundance_cluster1) <- df_sample_family_abundance_cluster1[1,]
+colnames(df_sample_family_abundance_cluster2) <- df_sample_family_abundance_cluster2[1,]
+colnames(df_sample_family_abundance_cluster3) <- df_sample_family_abundance_cluster3[1,]
+
+#Heatmap for Cluster 1,2, and 3 Samples Individually and a combined heatmap of the three
+
+H1 <- Heatmap(df_sample_family_abundance_cluster1, name = "Abundances in Cluster 1", column_title = "Samples", row_title = "Bacterial Families", row_names_gp = gpar(fontsize = 2))
+H2 <- Heatmap(df_sample_family_abundance_cluster2, name = "Abundances in Cluster 2", column_title = "Samples", row_title = "Bacterial Families", row_names_gp = gpar(fontsize = 2))
+H3 <- Heatmap(df_sample_family_abundance_cluster3, name = "Abundances in Cluster 3", column_title = "Samples", row_title = "Bacterial Families", row_names_gp = gpar(fontsize = 2))
+H1 + H2 + H3
+draw(H1 + H2 + H3, row_title = "Bacterial Families", column_title = "Sample", column_title_side = "bottom", gap = unit(0, "cm"), show_heatmap_legend = FALSE, show_annotation_legend = FALSE)
+
+#To compare this, make a heatmap of the unsorted data and cluster them - possibly using a dendrogram
+sample_family_abundance_whole <- read.csv("Sample_Family_Abundance.csv", header = TRUE)
+df_sample_family_abundance_whole <- as.data.frame(sample_family_abundance_whole)
+df_sample_family_abundance_whole <- t(df_sample_family_abundance_whole)
+colnames(df_sample_family_abundance_whole) <- df_sample_family_abundance_whole[1,]
+col1 <- rich.colors(100, palette = "blues", alpha = 1.0, rgb = FALSE, plot = FALSE)
+HMap <- Heatmap(df_sample_family_abundance_whole, name = "Abundances in Clusters", column_title = "Samples", row_title = "Bacterial Families", row_names_gp = gpar(fontsize = 2), cluster_columns = TRUE, cluster_column_slices = TRUE, 
+                clustering_distance_columns = "manhattan", clustering_method_columns = "complete", 
+                column_dend_side = c("top", "bottom"), column_dend_height = unit(10, 
+                                                                                 "mm"), show_column_dend = TRUE, column_dend_gp = gpar(), 
+                column_dend_reorder = is.logical(cluster_columns) || is.function(cluster_columns), show_heatmap_legend = FALSE)
+
+#This will give you some absolutely monstrously colourful graphs - try to use the gene expression template to convert it to a single colour and its shades
+
+mat <- as.matrix(df_sample_family_abundance_whole[, grep("M", colnames(df_sample_family_abundance_whole))])
+type <- gsub("s\\d+_","", colnames(mat))
+ha = HeatmapAnnotation(
+  df <- data.frame(type = type),
+  annotation_height = unit (4, "mm")
+)
+
+s9 <- sequential_hcl(9, "Purples 3")
+Heatmap(mat, km = 3, color_space = s9, na_col = "black", top_annotation = ha, show_row_names = TRUE, show_column_names = TRUE, show_heatmap_legend = FALSE, name = "Abundances in Clusters", column_title = "Samples", row_title = "Bacterial Families", row_names_gp = gpar(fontsize = 2), cluster_columns = TRUE, cluster_column_slices = TRUE, 
+        clustering_distance_columns = "manhattan", clustering_method_columns = "complete", 
+        column_dend_side = c("top", "bottom"), column_dend_height = unit(10, 
+                                                                         "mm"), show_column_dend = TRUE, column_dend_gp = gpar(), 
+        column_dend_reorder = is.logical(cluster_columns) || is.function(cluster_columns))
+
+#Redo KM Curves for the samples in the Famglom Dataaset
+sample_data(fam_glom)
+famglom_metadata <- read.csv("Famglom_Metadata.csv", sep = ",", header = TRUE, row.names = 1)
 head(famglom_metadata)
 Surv(famglom_metadata$progression_days, famglom_metadata$Progression)
 s1 <- survfit(Surv(famglom_metadata$progression_days, famglom_metadata$Progression) ~ 1, data = famglom_metadata)
-str(s1)
-survfit2(Surv(famglom_metadata$progression_days, famglom_metadata$Progression) ~ 1 , data = famglom_metadata) %>% ggsurvfit() + labs (x = "Days to Progression", y = "Overall Progression Probability")
 #END
